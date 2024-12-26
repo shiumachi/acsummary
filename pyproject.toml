@@ -1,7 +1,7 @@
 [project]
 name = "advent-calendar-summary"
 version = "0.1.0"
-description = "Add your description here"
+description = "This project summarizes Advent Calendar entries and provides a quick overview of their topics."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
