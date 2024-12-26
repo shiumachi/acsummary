@@ -12,10 +12,10 @@ class CSVWriter:
             writer.writeheader()
             for article in articles:
                 writer.writerow({
-                    '日付': article.date,
-                    'ハンドルネーム': article.handle_name,
-                    'タイトル': article.title,
-                    'ジャンル': article.genre,
-                    '要約': article.summary,
-                    'URL': article.url
+                    '日付': f'"{article.date}"',
+                    'ハンドルネーム': f'"{article.handle_name.replace("\"", "\\\"")}"',
+                    'タイトル': f'"{article.title.replace("\"", "\\\"")}"',
+                    'ジャンル': f'"{article.genre}"',
+                    '要約': f'"{article.summary.replace("\"", "\\\"") if article.summary else ""}"',
+                    'URL': f'"{article.url.replace("\"", "\\\"")}"'
                 })

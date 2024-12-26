@@ -1,16 +1,16 @@
-import asyncio
 import json
 import logging
-import os
 from typing import TypeAlias, Any
+import os
 
 import html2text
 from litellm import acompletion
 from .models import Article
+from .rate_limiter import RateLimiter
 
 # 型エイリアスの定義
 JsonDict: TypeAlias = dict[str, Any]
-CompletionResponse: TypeAlias = Any  # litellmの戻り値の型。より具体的な型があれば置き換えることを推奨
+CompletionResponse: TypeAlias = Any  # litellmの戻り値の型
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,17 +21,19 @@ class AnalysisError(Exception):
 class ContentAnalyzer:
     content_size_max: int = 524288
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, rate_limiter: RateLimiter) -> None:
         """
         ContentAnalyzerの初期化
         
         Args:
             api_key: Gemini APIのキー
+            rate_limiter: リクエストのレート制限を管理するインスタンス
         """
         os.environ["GEMINI_API_KEY"] = api_key
         self.html_converter = html2text.HTML2Text()
         self.html_converter.ignore_links = True
         self.html_converter.ignore_images = True
+        self.rate_limiter = rate_limiter
 
     def _clean_html_content(self, html_content: str) -> str:
         """
@@ -44,7 +46,7 @@ class ContentAnalyzer:
             変換・調整済みのプレーンテキスト
         """
         text_content = self.html_converter.handle(html_content)
-        return text_content[:self.content_size_max]  # コンテキストウィンドウを考慮
+        return text_content[:self.content_size_max]
 
     def _create_analysis_prompt(self, article: Article) -> str:
         """
@@ -98,6 +100,9 @@ class ContentAnalyzer:
             AnalysisError: 分析処理に失敗した場合
         """
         try:
+            # レート制限に従ってリクエストを実行
+            await self.rate_limiter.acquire()
+            
             response: CompletionResponse = await acompletion(
                 model="gemini/gemini-2.0-flash-exp",
                 messages=[
@@ -158,8 +163,9 @@ async def process_articles(api_key: str, articles: list[Article]) -> None:
         api_key: Gemini APIのキー
         articles: 処理対象の記事リスト
     """
-    analyzer = ContentAnalyzer(api_key)
+    # 10秒に1リクエストの制限を設定
+    rate_limiter = RateLimiter(requests_per_period=1, period_seconds=10.0)
+    analyzer = ContentAnalyzer(api_key, rate_limiter)
 
     for article in articles:
         await process_article(analyzer, article)
-        await asyncio.sleep(1)  # APIレート制限を考慮して待機
