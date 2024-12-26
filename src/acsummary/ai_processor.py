@@ -15,8 +15,10 @@ CompletionResponse: TypeAlias = Any  # litellmの戻り値の型
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class AnalysisError(Exception):
     """コンテンツ分析処理で発生するエラーを表すカスタム例外"""
+
 
 class ContentAnalyzer:
     content_size_max: int = 524288
@@ -24,7 +26,7 @@ class ContentAnalyzer:
     def __init__(self, api_key: str, rate_limiter: RateLimiter) -> None:
         """
         ContentAnalyzerの初期化
-        
+
         Args:
             api_key: Gemini APIのキー
             rate_limiter: リクエストのレート制限を管理するインスタンス
@@ -38,23 +40,23 @@ class ContentAnalyzer:
     def _clean_html_content(self, html_content: str) -> str:
         """
         HTMLコンテンツをプレーンテキストに変換し、適切な長さに調整
-        
+
         Args:
             html_content: 変換対象のHTML文字列
-            
+
         Returns:
             変換・調整済みのプレーンテキスト
         """
         text_content = self.html_converter.handle(html_content)
-        return text_content[:self.content_size_max]
+        return text_content[: self.content_size_max]
 
     def _create_analysis_prompt(self, article: Article) -> str:
         """
         分析用のプロンプトを生成
-        
+
         Args:
             article: 分析対象の記事
-            
+
         Returns:
             生成されたプロンプト文字列
         """
@@ -89,27 +91,24 @@ class ContentAnalyzer:
     async def analyze_content(self, article: Article) -> tuple[str, str]:
         """
         記事の内容を分析してジャンルと要約を生成
-        
+
         Args:
             article: 分析対象の記事
-            
+
         Returns:
             ジャンルと要約のタプル
-            
+
         Raises:
             AnalysisError: 分析処理に失敗した場合
         """
         try:
             # レート制限に従ってリクエストを実行
             await self.rate_limiter.acquire()
-            
+
             response: CompletionResponse = await acompletion(
                 model="gemini/gemini-2.0-flash-exp",
                 messages=[
-                    {
-                        "role": "user",
-                        "content": self._create_analysis_prompt(article)
-                    }
+                    {"role": "user", "content": self._create_analysis_prompt(article)}
                 ],
                 response_format={"type": "json_object"},
             )
@@ -138,10 +137,11 @@ class ContentAnalyzer:
             logger.error(f"記事の分析に失敗しました: {e}")
             return "未分類", "要約の生成に失敗しました"
 
+
 async def process_article(analyzer: ContentAnalyzer, article: Article) -> None:
     """
     1つの記事を処理し、分析結果を設定
-    
+
     Args:
         analyzer: 分析を行うContentAnalyzerインスタンス
         article: 処理対象の記事
@@ -155,10 +155,11 @@ async def process_article(analyzer: ContentAnalyzer, article: Article) -> None:
     except Exception as e:
         logger.error(f"記事の処理に失敗しました: {article.title} - {e}")
 
+
 async def process_articles(api_key: str, articles: list[Article]) -> None:
     """
     全ての記事を処理
-    
+
     Args:
         api_key: Gemini APIのキー
         articles: 処理対象の記事リスト
