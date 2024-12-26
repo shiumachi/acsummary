@@ -1,8 +1,8 @@
-from datetime import date, datetime
+from datetime import date
 import logging
 from typing import Any, AsyncIterator
 import aiohttp
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 from .models import Article
 
 logging.basicConfig(level=logging.INFO)
