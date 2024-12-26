@@ -1,10 +1,9 @@
 import csv
-from typing import List
 from .models import Article
 
 class CSVWriter:
     @staticmethod
-    def write_articles(articles: List[Article], output_path: str) -> None:
+    def write_articles(articles: list[Article], output_path: str) -> None:
         """記事情報をCSVファイルに出力"""
         headers = ['日付', 'ハンドルネーム', 'タイトル', 'ジャンル', '要約', 'URL']
         

@@ -3,39 +3,59 @@ import json
 import logging
 import os
 from dataclasses import asdict
-from typing import Optional, Tuple
+from typing import TypeAlias, Any, Literal
 
 import html2text
 from litellm import completion
-
 from .models import Article
+
+# 型エイリアスの定義
+JsonDict: TypeAlias = dict[str, Any]
+CompletionResponse: TypeAlias = Any  # litellmの戻り値の型。より具体的な型があれば置き換えることを推奨
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 class AnalysisError(Exception):
     """コンテンツ分析処理で発生するエラーを表すカスタム例外"""
 
-    pass
-
-
 class ContentAnalyzer:
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str) -> None:
+        """
+        ContentAnalyzerの初期化
+        
+        Args:
+            api_key: Gemini APIのキー
+        """
         os.environ["GEMINI_API_KEY"] = api_key
         self.html_converter = html2text.HTML2Text()
         self.html_converter.ignore_links = True
         self.html_converter.ignore_images = True
 
     def _clean_html_content(self, html_content: str) -> str:
-        """HTMLコンテンツをプレーンテキストに変換し、適切な長さに調整"""
+        """
+        HTMLコンテンツをプレーンテキストに変換し、適切な長さに調整
+        
+        Args:
+            html_content: 変換対象のHTML文字列
+            
+        Returns:
+            変換・調整済みのプレーンテキスト
+        """
         text_content = self.html_converter.handle(html_content)
-        # 最初の8000文字程度を使用（コンテキストウィンドウを考慮）
-        return text_content[:8000]
+        return text_content[:8000]  # コンテキストウィンドウを考慮
 
     def _create_analysis_prompt(self, article: Article) -> str:
-        """分析用のプロンプトを生成"""
-        clean_content = self._clean_html_content(article.content)
+        """
+        分析用のプロンプトを生成
+        
+        Args:
+            article: 分析対象の記事
+            
+        Returns:
+            生成されたプロンプト文字列
+        """
+        clean_content = self._clean_html_content(article.content or "")
         return f"""以下の技術ブログ記事を分析し、ジャンルと要約を生成してください。
 
 記事タイトル: {article.title}
@@ -63,19 +83,31 @@ class ContentAnalyzer:
 - レビュー・トラブルシューティング
 """
 
-    async def analyze_content(self, article: Article) -> Tuple[str, str]:
-        """記事の内容を分析してジャンルと要約を生成"""
+    async def analyze_content(self, article: Article) -> tuple[str, str]:
+        """
+        記事の内容を分析してジャンルと要約を生成
+        
+        Args:
+            article: 分析対象の記事
+            
+        Returns:
+            ジャンルと要約のタプル
+            
+        Raises:
+            AnalysisError: 分析処理に失敗した場合
+        """
         try:
-            # Geminiによる分析処理
-            response = await completion(
+            response: CompletionResponse = await completion(
                 model="gemini/gemini-pro",
                 messages=[
-                    {"role": "user", "content": self._create_analysis_prompt(article)}
+                    {
+                        "role": "user",
+                        "content": self._create_analysis_prompt(article)
+                    }
                 ],
                 response_format={"type": "json_object"},
             )
 
-            # レスポンスの解析
             if (
                 not response
                 or not response.choices
@@ -84,9 +116,9 @@ class ContentAnalyzer:
                 raise AnalysisError("AIからの応答が空でした")
 
             try:
-                result = json.loads(response.choices[0].message.content)
-                genre = result.get("genre")
-                summary = result.get("summary")
+                result: JsonDict = json.loads(response.choices[0].message.content)
+                genre: str | None = result.get("genre")
+                summary: str | None = result.get("summary")
 
                 if not genre or not summary:
                     raise AnalysisError("必要な情報が含まれていません")
@@ -98,12 +130,16 @@ class ContentAnalyzer:
 
         except Exception as e:
             logger.error(f"記事の分析に失敗しました: {e}")
-            # 失敗した場合はデフォルト値を返す
             return "未分類", "要約の生成に失敗しました"
 
-
 async def process_article(analyzer: ContentAnalyzer, article: Article) -> None:
-    """1つの記事を処理し、分析結果を設定"""
+    """
+    1つの記事を処理し、分析結果を設定
+    
+    Args:
+        analyzer: 分析を行うContentAnalyzerインスタンス
+        article: 処理対象の記事
+    """
     try:
         genre, summary = await analyzer.analyze_content(article)
         article.genre = genre
@@ -113,12 +149,16 @@ async def process_article(analyzer: ContentAnalyzer, article: Article) -> None:
     except Exception as e:
         logger.error(f"記事の処理に失敗しました: {article.title} - {e}")
 
-
 async def process_articles(api_key: str, articles: list[Article]) -> None:
-    """全ての記事を処理"""
+    """
+    全ての記事を処理
+    
+    Args:
+        api_key: Gemini APIのキー
+        articles: 処理対象の記事リスト
+    """
     analyzer = ContentAnalyzer(api_key)
 
     for article in articles:
         await process_article(analyzer, article)
-        # APIレート制限を考慮して待機
-        await asyncio.sleep(1)
+        await asyncio.sleep(1)  # APIレート制限を考慮して待機
