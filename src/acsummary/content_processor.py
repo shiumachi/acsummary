@@ -1,17 +1,31 @@
 from dataclasses import dataclass
-from datetime import datetime
 import logging
 from typing import Protocol, AsyncIterator
 import aiohttp
 from bs4 import BeautifulSoup
 import html2text
 from .models import Article
+from typing import Any
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class ContentFetcher(Protocol):
     """コンテンツ取得のインターフェース"""
+    async def __aenter__(self) -> "ContentFetcher":
+        """
+        非同期コンテキストマネージャのエントリポイント
+        """
+        ...
+
+    async def __aexit__(self, exc_type: type[BaseException] | None, 
+                        exc_val: BaseException | None, 
+                        exc_tb: Any) -> None:
+        """
+        非同期コンテキストマネージャの終了ポイント
+        """
+        ...
+
     async def fetch(self, url: str) -> str:
         """
         指定URLのコンテンツを取得

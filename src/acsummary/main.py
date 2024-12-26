@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Sequence
 import click
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
@@ -30,7 +29,7 @@ async def collect_articles(scraper: AdventCalendarScraper) -> list[Article]:
             articles.append(article)
     return articles
 
-async def process_content(processor: ContentProcessor, articles: Sequence[Article]) -> list[Article]:
+async def process_content(processor: ContentProcessor, articles: list[Article]) -> list[Article]:
     """
     記事のコンテンツを取得・処理
     
@@ -80,12 +79,12 @@ async def process_calendar(calendar_url: str, output_path: str, api_key: str) ->
             await process_articles(api_key, articles_with_content)
             
             # CSV出力用のディレクトリを作成
-            output_path = Path(output_path)
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path_path = Path(output_path)
+            output_path_path.parent.mkdir(parents=True, exist_ok=True)
             
             # CSV出力
             progress.add_task(description="CSVに出力中...", total=None)
-            CSVWriter.write_articles(articles_with_content, str(output_path))
+            CSVWriter.write_articles(articles_with_content, output_path)
             
             logger.info(f"処理が完了しました。出力先: {output_path}")
             

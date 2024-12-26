@@ -2,11 +2,10 @@ import asyncio
 import json
 import logging
 import os
-from dataclasses import asdict
-from typing import TypeAlias, Any, Literal
+from typing import TypeAlias, Any
 
 import html2text
-from litellm import completion
+from litellm import acompletion
 from .models import Article
 
 # 型エイリアスの定義
@@ -20,6 +19,8 @@ class AnalysisError(Exception):
     """コンテンツ分析処理で発生するエラーを表すカスタム例外"""
 
 class ContentAnalyzer:
+    content_size_max: int = 524288
+
     def __init__(self, api_key: str) -> None:
         """
         ContentAnalyzerの初期化
@@ -43,7 +44,7 @@ class ContentAnalyzer:
             変換・調整済みのプレーンテキスト
         """
         text_content = self.html_converter.handle(html_content)
-        return text_content[:8000]  # コンテキストウィンドウを考慮
+        return text_content[:self.content_size_max]  # コンテキストウィンドウを考慮
 
     def _create_analysis_prompt(self, article: Article) -> str:
         """
@@ -97,8 +98,8 @@ class ContentAnalyzer:
             AnalysisError: 分析処理に失敗した場合
         """
         try:
-            response: CompletionResponse = await completion(
-                model="gemini/gemini-pro",
+            response: CompletionResponse = await acompletion(
+                model="gemini/gemini-2.0-flash-exp",
                 messages=[
                     {
                         "role": "user",

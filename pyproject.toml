@@ -23,4 +23,4 @@ build-backend = "hatchling.build"
 packages = ["src/acsummary"]
 
 [project.scripts]
-acsummary = "acsummary.cli:cli"
+acsummary = "acsummary.main:main"
