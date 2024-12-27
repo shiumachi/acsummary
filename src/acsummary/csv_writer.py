@@ -19,7 +19,7 @@ class CSVWriter:
                         "ハンドルネーム": f"{article.handle_name}",
                         "タイトル": f"{article.title}",
                         "ジャンル": f"{article.genre}",
-                        "要約": f'"{article.summary}"',
+                        "要約": f"{article.summary}",
                         "URL": f"{article.url}",
                     }
                 )
