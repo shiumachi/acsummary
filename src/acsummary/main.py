@@ -1,30 +1,32 @@
 import asyncio
 import logging
 from pathlib import Path
+
 import click
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
-from .scraper import AdventCalendarScraper
-from .content_processor import ContentProcessor
 from .ai_processor import process_articles
+from .content_processor import ContentProcessor
 from .csv_writer import CSVWriter
 from .models import Article
+from .scraper import create_scraper
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-async def collect_articles(scraper: AdventCalendarScraper) -> list[Article]:
+async def collect_articles(calendar_url: str) -> list[Article]:
     """
     スクレイパーを使って記事を収集
 
     Args:
-        scraper: 使用するスクレイパーインスタンス
+        calendar_url: アドベントカレンダーのURL
 
     Returns:
         収集した記事のリスト
     """
     articles: list[Article] = []
+    scraper = create_scraper(calendar_url)
     async with scraper:
         async for article in scraper.scrape_articles():
             articles.append(article)
@@ -67,8 +69,7 @@ async def process_calendar(calendar_url: str, output_path: str, api_key: str) ->
         ) as progress:
             # 記事の収集
             progress.add_task(description="記事を収集中...", total=None)
-            scraper = AdventCalendarScraper(calendar_url)
-            articles = await collect_articles(scraper)
+            articles = await collect_articles(calendar_url)
 
             if not articles:
                 logger.warning("記事が見つかりませんでした")
@@ -106,7 +107,7 @@ def main(calendar_url: str, output_path: str, api_key: str) -> None:
     """
     アドベントカレンダーの記事を要約してCSVに出力
 
-    Args:
+    Args
         calendar_url: アドベントカレンダーのURL
         output_path: 出力CSVのパス
         api_key: Gemini APIのキー

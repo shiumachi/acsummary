@@ -2,13 +2,13 @@ import pytest
 import pytest_asyncio
 from datetime import date
 from unittest.mock import patch
-from ..scraper import AdventCalendarScraper, ScrapingError
+from ..scraper import AdventarCalendarScraper, ScrapingError
 from ..models import Article
 
 
 @pytest_asyncio.fixture
 async def scraper():
-    async with AdventCalendarScraper("http://fake.url") as s:
+    async with AdventarCalendarScraper("http://fake.url") as s:
         yield s
 
 
