@@ -14,8 +14,13 @@ uv sync
 ## Usage
 
 ```bash
-uv run acsummary --api-key $YOUR_GEMINI_API_KEY $ADVENTAR_URL $OUTPUT_CSV
+uv run acsummary --api-key $YOUR_GEMINI_API_KEY $ADVENT_CALENDAR_URL $OUTPUT_CSV
 ```
+
+### Supported Advent Calendars
+
+- Adventar
+- Qiita Advent Calendar
 
 
 ## Development
