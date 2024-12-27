@@ -4,7 +4,7 @@ from typing import TypeAlias, Any
 import os
 
 import html2text
-from litellm import acompletion
+import litellm
 from .models import Article
 from .rate_limiter import RateLimiter
 
@@ -105,7 +105,7 @@ class ContentAnalyzer:
             # レート制限に従ってリクエストを実行
             await self.rate_limiter.acquire()
 
-            response: CompletionResponse = await acompletion(
+            response: CompletionResponse = await litellm.acompletion(
                 model="gemini/gemini-2.0-flash-exp",
                 messages=[
                     {"role": "user", "content": self._create_analysis_prompt(article)}

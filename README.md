@@ -16,3 +16,12 @@ uv sync
 ```bash
 uv run acsummary --api-key $YOUR_GEMINI_API_KEY $ADVENTAR_URL $OUTPUT_CSV
 ```
+
+
+## Development
+
+### Test
+
+```bash
+uv run pytest
+```
